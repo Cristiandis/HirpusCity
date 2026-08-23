@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>HIRPUSEARCH</title>
+    <link rel="stylesheet" href="/search.css" />
+  </head>
+  <body data-page="search" class="gpage">
+    <!-- senza query: ricerca grande centrata -->
+    <div id="hero-mode" class="ghero">
+      <div class="hp-logo">HIRPUS<b>SEARCH</b></div>
+      <form method="get" action="/search.html">
+        <input type="text" name="q" autofocus />
+        <div class="g-btns">
+          <button type="submit" class="g-btn">Cerca con HIRPUSEARCH</button>
+          <button type="button" class="g-btn" id="lucky-btn">
+            Mi sento fortunato
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- con query: barra compatta in alto, navigazione a sinistra + risultati -->
+    <div id="bar-mode" style="display: none">
+      <div class="g-top">
+        <a class="hp-logo" href="/index.html">HIRPUS<b>SEARCH</b></a>
+        <form class="g-qform" method="get" action="/search.html">
+          <input type="text" id="gq" name="q" />
+        </form>
+      </div>
+
+      <div class="g-meta"><span id="gcount"></span></div>
+
+      <div class="g-cols">
+        <aside class="g-side">
+          <a href="/index.html">HOME</a>
+          <a href="/dashboard.html">DASHBOARD</a>
+        </aside>
+
+        <section class="g-res" id="gresults"></section>
+      </div>
+    </div>
+
+    <p class="gfoot">
+      <img alt="" height="23" src="/static/italy.gif" width="31" />&nbsp;100%
+      MADE IN ITALY
+    </p>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/search.js"></script>
+  </body>
+</html>

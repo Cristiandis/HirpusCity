@@ -1,0 +1,21 @@
+services:
+  hirpuscity:
+    image: ghcr.io/cristiandis/hirpuscity:latest
+    # build: .
+    container_name: hirpuscity
+    restart: unless-stopped
+    environment:
+      HIRPUS_LISTEN: 0.0.0.0:8080
+      HIRPUS_DATA_DIR: /data
+      # HIRPUS_BASE_DOMAIN: pages.hirpus
+      # HIRPUS_SITE_QUOTA_MB: "1024"
+      # HIRPUS_ADMIN_UUID: 00000000-0000-0000-0000-000000000000
+    ports:
+      # reachable only by a proxy on the same machine;
+      # if your reverse proxy runs on another host use "8080:8080"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./data:/data
+      # the static frontend is read from disk on every request: with this
+      # volume you can edit web pages without rebuilding or restarting
+      # - ./web:/web

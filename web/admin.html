@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>admin - HIRPUSPAGES</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body data-page="admin">
+    <div class="auto-style1 center">
+      <span class="auto-style2">HIRPUS<span class="logo-blu">PAGES</span></span
+      ><br />
+      <span class="auto-style5">il tuo angolo su HIRPUSNET</span>
+    </div>
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">
+            <a href="/index.html">HOME</a> &nbsp;&bull;&nbsp;
+            <a href="/dashboard.html">DASHBOARD</a> &nbsp;&bull;&nbsp;
+            <a href="/search.html">CERCA SITI</a>
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <div id="admin-msg" class="msg" style="display: none"></div>
+    <div id="admin-err" class="err" style="display: none"></div>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">PANNELLO DI CONTROLLO</span>
+        </td>
+      </tr>
+    </table>
+
+    <div id="admin-login-box" style="display: none">
+      <form id="admin-login-form">
+        <table class="form" style="width: 100%" bgcolor="#B9B9B9">
+          <tr>
+            <td>Chiave admin:</td>
+            <td>
+              <input type="password" id="admin-key" required size="40" />
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><input type="submit" value="ENTRA" /></td>
+          </tr>
+        </table>
+      </form>
+    </div>
+
+    <div id="admin-panel-box" style="display: none">
+      <p class="center small" id="admin-stats"></p>
+
+      <table style="width: 100%">
+        <tbody id="admin-site-list"></tbody>
+      </table>
+
+      <div class="center">
+        <button id="admin-logout-btn">LOGOUT ADMIN</button>
+      </div>
+    </div>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td>&nbsp;</td>
+      </tr>
+    </table>
+    <p>&nbsp;</p>
+    <p class="auto-style1">
+      <img alt="" height="23" src="/static/italy.gif" width="31" />&nbsp;
+      <strong><span class="auto-style6">100% MADE IN ITALY</span></strong>
+    </p>
+    <p>&nbsp;</p>
+    <script src="/js/common.js"></script>
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

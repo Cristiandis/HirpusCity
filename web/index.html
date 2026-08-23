@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>home - HIRPUSPAGES</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/search.css" />
+  </head>
+  <body data-page="home">
+    <div class="auto-style1 center">
+      <span class="auto-style2">HIRPUS<span class="logo-blu">PAGES</span></span
+      ><br />
+      <span class="auto-style5">il tuo angolo su HIRPUSNET</span>
+    </div>
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">
+            <a href="/index.html">HOME</a> &nbsp;&bull;&nbsp;
+            <a href="/dashboard.html">DASHBOARD</a> &nbsp;&bull;&nbsp;
+            <a href="/search.html">CERCA SITI</a>
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <div id="home-err" class="err" style="display: none"></div>
+
+    <div id="created-box" style="display: none">
+      <h1 class="center auto-style4">SITO CREATO!!</h1>
+      <p class="center auto-style5">
+        Il tuo sito &egrave; pronto all'indirizzo:<br />
+        <span class="auto-style6"><strong id="created-domain"></strong></span>
+      </p>
+      <div class="center">
+        <p>Ecco la tua CHIAVE UNICA (conservala, ti serve per il login):</p>
+        <p><code class="token" id="created-token"></code></p>
+      </div>
+    </div>
+
+    <div id="logged-box" style="display: none">
+      <p class="center auto-style4"><span id="logged-as"></span></p>
+      <p class="center">
+        <a href="/dashboard.html" class="auto-style5">VAI AL DASHBOARD -&gt;</a>
+      </p>
+    </div>
+
+    <div id="signup-box">
+      <table class="auto-style3" style="width: 100%">
+        <tr>
+          <td class="auto-style9 center">
+            <span class="auto-style8">ISCRIVITI - GRATIS!</span>
+          </td>
+        </tr>
+      </table>
+      <form id="signup-form">
+        <table class="form" style="width: 100%" bgcolor="#B9B9B9">
+          <tr>
+            <td>Sottodominio:</td>
+            <td>
+              <input
+                type="text"
+                id="signup-sub"
+                required
+                maxlength="63"
+                size="25"
+                placeholder="miosito"
+              />
+              <strong id="domain-suffix"></strong>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><input type="submit" value="CREA IL SITO!!" /></td>
+          </tr>
+        </table>
+      </form>
+      <p class="center small">
+        Al momento dell'iscrizione riceverai una
+        <strong>CHIAVE UNICA (UUID)</strong>: conservala, serve per accedere al
+        dashboard! Nome e descrizione li imposti dopo, nel dashboard.
+      </p>
+    </div>
+
+    <div id="login-box">
+      <table class="auto-style3" style="width: 100%">
+        <tr>
+          <td class="auto-style9 center">
+            <span class="auto-style8">ACCEDI AL DASHBOARD</span>
+          </td>
+        </tr>
+      </table>
+      <form id="login-form">
+        <table class="form" style="width: 100%" bgcolor="#B9B9B9">
+          <tr>
+            <td>Sottodominio:</td>
+            <td><input type="text" id="login-sub" required size="25" /></td>
+          </tr>
+          <tr>
+            <td>Chiave (UUID):</td>
+            <td>
+              <input type="password" id="login-token" required size="40" />
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td><input type="submit" value="LOGIN" /></td>
+          </tr>
+        </table>
+      </form>
+    </div>
+
+    <div class="gshero">
+      <div class="hp-logo">HIRPUS<b>SEARCH</b></div>
+      <form method="get" action="/search.html">
+        <input type="text" name="q" placeholder="cerca con HIRPUSEARCH..." />
+        <div class="g-btns">
+          <button type="submit" class="g-btn">Cerca su HIRPUSNET</button>
+          <button type="button" class="g-btn" id="lucky-btn">
+            Mi sento fortunato
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">SITI RECENTI</span>
+        </td>
+      </tr>
+    </table>
+    <table id="recent-list" style="width: 100%"></table>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td>&nbsp;</td>
+      </tr>
+    </table>
+    <p>&nbsp;</p>
+    <p class="auto-style1">
+      <img alt="" height="23" src="/static/italy.gif" width="31" />&nbsp;
+      <strong><span class="auto-style6">100% MADE IN ITALY</span></strong>
+    </p>
+    <p>&nbsp;</p>
+    <script src="/js/common.js"></script>
+    <script src="/js/home.js"></script>
+  </body>
+</html>

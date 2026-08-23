@@ -1,0 +1,99 @@
+.auto-style1 {
+  text-align: center;
+}
+.auto-style2 {
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  font-size: 40pt;
+}
+.auto-style3 {
+  color: #003fff;
+  background-color: #0d49b7;
+}
+.auto-style4 {
+  font-size: 20pt;
+}
+.auto-style5 {
+  font-size: 15pt;
+}
+.auto-style6 {
+  background-color: #daf100;
+}
+.auto-style8 {
+  font-size: x-large;
+}
+.auto-style9 {
+  color: #ffe000;
+}
+.auto-style10 {
+  background-color: #b9b9b9;
+}
+.center {
+  text-align: center;
+}
+.logo-blu {
+  color: #003fff;
+}
+body {
+  background-color: #efefef;
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 12px;
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  color: #111;
+}
+a {
+  color: #003fff;
+}
+.auto-style9 a {
+  color: #ffe000;
+}
+input[type="text"],
+input[type="password"] {
+  border: 2px inset #b9b9b9;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12pt;
+  padding: 2px 4px;
+}
+input[type="submit"],
+button {
+  font-family: inherit;
+  font-size: 12pt;
+  cursor: pointer;
+  background-color: #0d49b7;
+  color: #ffe000;
+  border: 3px outset #003fff;
+  padding: 3px 14px;
+}
+input[type="submit"]:active,
+button:active {
+  border-style: inset;
+}
+button.danger {
+  background-color: #7a0000;
+  border-color: #ff9a9a;
+  color: #ffe000;
+}
+table.form td {
+  padding: 4px 8px;
+}
+.msg {
+  background-color: #daf100;
+  padding: 6px;
+  margin: 8px 0;
+}
+.err {
+  background-color: #ff9a9a;
+  color: #7a0000;
+  padding: 6px;
+  margin: 8px 0;
+}
+.small {
+  font-size: 11pt;
+}
+code.token {
+  background: #fff;
+  border: 1px solid #999;
+  padding: 2px 6px;
+  font-size: 13pt;
+}

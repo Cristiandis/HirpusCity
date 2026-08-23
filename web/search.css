@@ -1,0 +1,200 @@
+* {
+  box-sizing: border-box;
+}
+
+body.gpage {
+  font-family: arial, sans-serif;
+  margin: 0;
+  padding: 20px 30px;
+  background: #fff;
+  color: #222;
+  font-size: 14px;
+}
+
+.hp-logo {
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  color: #111;
+  user-select: none;
+  white-space: nowrap;
+}
+.hp-logo b {
+  color: #003fff;
+  font-weight: normal;
+}
+a.hp-logo {
+  text-decoration: none;
+}
+
+.g-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 30px;
+}
+.g-top .hp-logo {
+  font-size: 28px;
+  margin-top: 6px;
+}
+.g-qform {
+  flex: 1;
+  max-width: 640px;
+  padding-top: 10px;
+}
+input[type="text"].g-q {
+  width: 100%;
+  height: 34px;
+  font-size: 16px;
+  padding: 0 10px;
+  border: 1px solid #dcdcdc;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+input[type="text"]:hover,
+input[type="text"]:focus {
+  border-color: #b9b9b9;
+}
+
+.g-meta {
+  margin-top: 12px;
+  color: #666;
+  font-size: 13px;
+  border-bottom: 1px solid #ebebeb;
+  padding-bottom: 10px;
+}
+
+.g-cols {
+  display: flex;
+  margin-top: 15px;
+}
+.g-side {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+.g-side a {
+  color: #1a0dab;
+  text-decoration: none;
+  display: block;
+  padding: 4px 0;
+}
+.g-side a:hover {
+  text-decoration: underline;
+}
+
+.g-res {
+  flex: 1;
+  max-width: 640px;
+}
+.g-r {
+  margin-bottom: 24px;
+}
+.g-r h3 {
+  margin: 0 0 2px 0;
+  font-weight: normal;
+  font-size: 18px;
+}
+.g-r h3 a {
+  color: #1a0dab;
+  text-decoration: none;
+}
+.g-r h3 a:hover {
+  text-decoration: underline;
+}
+.g-u {
+  color: #006621;
+  font-size: 13px;
+  margin-top: 1px;
+}
+.g-u a {
+  color: inherit;
+  text-decoration: none;
+}
+.g-s {
+  color: #222;
+  line-height: 1.4;
+  margin: 2px 0;
+}
+.g-none {
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.g-none ul {
+  margin: 8px 0 0 18px;
+  padding: 0;
+}
+
+button.g-btn {
+  background-color: #f2f2f2;
+  border: 1px solid #f2f2f2;
+  border-radius: 2px;
+  color: #5f6368;
+  font-size: 14px;
+  margin: 0 4px;
+  padding: 0 16px;
+  height: 36px;
+  cursor: pointer;
+}
+button.g-btn:hover {
+  border: 1px solid #c6c6c6;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  color: #222;
+}
+
+.ghero {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-top: 140px;
+  text-align: center;
+}
+.ghero .hp-logo {
+  font-size: 56px;
+  margin-bottom: 30px;
+}
+.ghero input[type="text"] {
+  width: 580px;
+  max-width: 85vw;
+  height: 38px;
+  font-size: 16px;
+  padding: 0 12px;
+  border: 1px solid #dcdcdc;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+.ghero input[type="text"]:hover,
+.ghero input[type="text"]:focus {
+  border-color: #b9b9b9;
+}
+.g-btns {
+  margin-top: 25px;
+}
+
+.gshero {
+  background: #fff;
+  border: 3px outset #003fff;
+  padding: 40px 16px 34px;
+  text-align: center;
+}
+.gshero .hp-logo {
+  font-size: 44px;
+  margin-bottom: 26px;
+}
+.gshero input[type="text"] {
+  width: 580px;
+  max-width: 85vw;
+  height: 38px;
+  font-size: 16px;
+  padding: 0 12px;
+  border: 1px solid #dcdcdc;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+.gshero input[type="text"]:hover,
+.gshero input[type="text"]:focus {
+  border-color: #b9b9b9;
+}
+
+.gfoot {
+  margin: 50px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: #767676;
+}

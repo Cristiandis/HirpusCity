@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <title>dashboard - HIRPUSPAGES</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body data-page="dashboard">
+    <div class="auto-style1 center">
+      <span class="auto-style2">HIRPUS<span class="logo-blu">PAGES</span></span
+      ><br />
+      <span class="auto-style5">il tuo angolo su HIRPUSNET</span>
+    </div>
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">
+            <a href="/index.html">HOME</a> &nbsp;&bull;&nbsp;
+            <a href="/dashboard.html">DASHBOARD</a> &nbsp;&bull;&nbsp;
+            <a href="/search.html">CERCA SITI</a>
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <div id="dash-msg" class="msg" style="display: none"></div>
+    <div id="dash-err" class="err" style="display: none"></div>
+
+    <h2 class="center" id="dash-title"></h2>
+    <p class="center">
+      <a id="site-link" href="/" target="_blank" class="auto-style5"
+        >VEDI IL TUO SITO -&gt;</a
+      >
+    </p>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">CARICA FILE (html, css, immagini)</span>
+        </td>
+      </tr>
+    </table>
+    <form id="upload-form">
+      <table class="form" style="width: 100%" bgcolor="#B9B9B9">
+        <tr>
+          <td><input type="file" name="file" multiple required /></td>
+        </tr>
+        <tr>
+          <td><input type="submit" value="CARICA FILE" /></td>
+        </tr>
+      </table>
+    </form>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">I TUOI FILE</span>
+        </td>
+      </tr>
+    </table>
+    <table style="width: 100%">
+      <tbody id="file-list"></tbody>
+    </table>
+    <p class="center small" id="used-line"></p>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">INFO DEL SITO (per la ricerca)</span>
+        </td>
+      </tr>
+    </table>
+    <form id="meta-form">
+      <table class="form" style="width: 100%" bgcolor="#B9B9B9">
+        <tr>
+          <td>Nome:</td>
+          <td>
+            <input type="text" id="meta-name" maxlength="120" size="35" />
+          </td>
+        </tr>
+        <tr>
+          <td>Descrizione:</td>
+          <td>
+            <input type="text" id="meta-desc" maxlength="120" size="55" />
+          </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td><input type="submit" value="SALVA INFO" /></td>
+        </tr>
+      </table>
+    </form>
+
+    <div class="center">
+      <button id="logout-btn">LOGOUT</button>
+    </div>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td class="auto-style9 center">
+          <span class="auto-style8">ZONA PERICOLOSA</span>
+        </td>
+      </tr>
+    </table>
+    <p class="center small">
+      La cancellazione del sito &egrave; definitiva: registro, file e chiave
+      vengono eliminati per sempre.
+    </p>
+    <div class="center">
+      <button id="delete-btn" class="danger">CANCELLA IL MIO SITO</button>
+    </div>
+
+    <table class="auto-style3" style="width: 100%">
+      <tr>
+        <td>&nbsp;</td>
+      </tr>
+    </table>
+    <p>&nbsp;</p>
+    <p class="auto-style1">
+      <img alt="" height="23" src="/static/italy.gif" width="31" />&nbsp;
+      <strong><span class="auto-style6">100% MADE IN ITALY</span></strong>
+    </p>
+    <p>&nbsp;</p>
+    <script src="/js/common.js"></script>
+    <script src="/js/dashboard.js"></script>
+  </body>
+</html>
