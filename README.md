@@ -95,7 +95,6 @@ the admin routes don't exist at all.
   in the results (HIRPUSEARCH).
 - Analytics: each served request on a user site increments its visit counter
   (shown on the dashboard, total in the admin panel). Stored in the registry.
-- Search: case-insensitive substring match over domain, name, description.
 - User sites are served statically based on the Host header, `index.html`
   as directory entry, optional custom `404.html`.
 - Frontend lives in `web/` (HTML pages, `style.css`, `search.css` for the
@@ -105,3 +104,7 @@ the admin routes don't exist at all.
   immediately and new pages need no code changes.
 - Allowed uploads: `html htm css png jpg jpeg gif webp svg ico` (no JS),
   all counted against the quota.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
