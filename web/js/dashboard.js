@@ -49,6 +49,8 @@ function renderMe() {
     " (" +
     pct +
     "%)";
+  $("traffic-line").textContent =
+    "Visite: " + me.visits.toLocaleString("it-IT");
   $("meta-name").value = me.name;
   $("meta-desc").value = me.description;
   fillRows(

@@ -88,7 +88,13 @@ the admin routes don't exist at all.
 - Login: subdomain + key set an `hcity=<sub>:<key>` cookie, verified against
   the registry on every API call.
 - Dashboard: multi-file upload, file deletion, site name/description (used
-  by search), quota bar, and self-service site deletion (danger zone).
+  by search), quota bar, visit stats, and self-service site
+  deletion (danger zone).
+- Search: every word must match (AND), ranked by match quality (exact name,
+  then name, description, domain) and recency; matched words are highlighted
+  in the results (HIRPUSEARCH).
+- Analytics: each served request on a user site increments its visit counter
+  (shown on the dashboard, total in the admin panel). Stored in the registry.
 - Search: case-insensitive substring match over domain, name, description.
 - User sites are served statically based on the Host header, `index.html`
   as directory entry, optional custom `404.html`.

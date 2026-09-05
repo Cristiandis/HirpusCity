@@ -1,4 +1,28 @@
-function resultNode(s) {
+function highlightQuery(text, q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return [document.createTextNode(text)];
+  const lower = text.toLowerCase();
+  const nodes = [];
+  let pos = 0;
+  while (pos < text.length) {
+    let hit = -1;
+    for (const w of words) {
+      const i = lower.indexOf(w, pos);
+      if (i >= 0 && (hit === -1 || i < hit)) hit = i;
+    }
+    if (hit === -1) {
+      nodes.push(document.createTextNode(text.slice(pos)));
+      break;
+    }
+    if (hit > pos) nodes.push(document.createTextNode(text.slice(pos, hit)));
+    const word = words.find((w) => lower.indexOf(w, hit) === hit);
+    nodes.push(el("b", "", text.slice(hit, hit + word.length)));
+    pos = hit + word.length;
+  }
+  return nodes;
+}
+
+function resultNode(s, q) {
   const r = el("div", "g-r");
 
   const h = el("h3");
@@ -14,7 +38,11 @@ function resultNode(s) {
   url.append(cached, " - ", similar);
   r.append(url);
 
-  if (s.description) r.append(el("div", "g-s", s.description));
+  if (s.description) {
+    const sn = el("div", "g-s");
+    for (const node of highlightQuery(s.description, q)) sn.append(node);
+    r.append(sn);
+  }
   return r;
 }
 
@@ -74,5 +102,5 @@ onPage("search", async () => {
     box.append(noResultNode(q));
     return;
   }
-  for (const s of sites) box.append(resultNode(s));
+  for (const s of sites) box.append(resultNode(s, q));
 });

@@ -25,7 +25,11 @@ function adminHeadCell(s) {
   a.href = "https://" + s.domain + "/";
   a.target = "_blank";
   a.appendChild(el("strong", "", s.domain));
-  td.append(a, el("span", "small", " (" + fmtSize(s.size_bytes) + ")"));
+  const span = el("span", "small", " (" + fmtSize(s.size_bytes) + ")");
+  if (s.visits !== undefined) {
+    span.append(" - Visite: " + s.visits.toLocaleString("it-IT"));
+  }
+  td.append(a, span);
   return td;
 }
 
@@ -85,11 +89,17 @@ async function loadPanel() {
   $("admin-panel-box").style.display = "";
 
   let total = 0;
-  for (const s of data.sites) total += s.size_bytes;
+  let visits = 0;
+  for (const s of data.sites) {
+    total += s.size_bytes;
+    visits += s.visits || 0;
+  }
   $("admin-stats").textContent =
     data.sites.length +
     " siti registrati, spazio totale occupato: " +
-    fmtSize(total);
+    fmtSize(total) +
+    ", visite totali: " +
+    visits.toLocaleString("it-IT");
 
   fillRows(
     $("admin-site-list"),

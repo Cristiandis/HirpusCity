@@ -26,6 +26,7 @@ pub async fn serve(app: &App, sub: &str, path: &str) -> Response {
         if custom.is_file()
             && let Ok(bytes) = std::fs::read(&custom)
         {
+            app.store.record_traffic(sub);
             return (
                 StatusCode::NOT_FOUND,
                 [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
@@ -38,6 +39,7 @@ pub async fn serve(app: &App, sub: &str, path: &str) -> Response {
 
     match std::fs::read(&full) {
         Ok(bytes) => {
+            app.store.record_traffic(sub);
             let mime = mime_guess::from_path(&full)
                 .first_raw()
                 .unwrap_or("application/octet-stream")

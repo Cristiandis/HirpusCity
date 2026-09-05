@@ -140,6 +140,7 @@ pub async fn sites(State(app): State<Arc<App>>, Query(params): Query<SitesQuery>
 
 pub async fn me(State(app): State<Arc<App>>, User(sub): User) -> Response {
     let (name, description) = app.store.get_meta(&sub);
+    let visits = app.store.get_visits(&sub);
     let files: Vec<serde_json::Value> = app
         .store
         .site_files(&sub)
@@ -154,6 +155,7 @@ pub async fn me(State(app): State<Arc<App>>, User(sub): User) -> Response {
         "description": description,
         "quota_bytes": app.store.quota_bytes,
         "used_bytes": app.store.dir_size(&sub),
+        "visits": visits,
         "files": files,
     }))
 }
@@ -287,12 +289,14 @@ pub async fn admin_sites(State(app): State<Arc<App>>, _: Admin) -> Response {
     let mut rows: Vec<serde_json::Value> = Vec::new();
     for info in app.store.recent_sites(usize::MAX) {
         if let Some(sub) = info.domain.strip_suffix(&base_suffix) {
+            let visits = app.store.get_visits(sub);
             rows.push(json!({
                 "sub": sub,
                 "domain": info.domain,
                 "name": info.name,
                 "description": info.description,
                 "size_bytes": app.store.dir_size(sub),
+                "visits": visits,
             }));
         }
     }

@@ -33,6 +33,8 @@ pub struct SiteRecord {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default)]
+    pub visits: u64,
 }
 
 /// Derived view of a site used by search / listings.
@@ -75,18 +77,35 @@ fn validate_subdomain(sub: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
-/// Case-insensitive word-substring match against domain/name/description.
-fn matches_query(info: &SiteInfo, words: &[String]) -> bool {
+/// Score a site against a query: None if it does not match ALL words.
+///
+/// Lower is better; rank order: exact name > name substring > description >
+/// domain. Partial matches (a word found) count less than full matches.
+fn score_doc(info: &SiteInfo, words: &[String]) -> Option<u32> {
     if words.is_empty() {
-        return true;
+        return Some(0);
     }
     let name = info.name.to_lowercase();
     let desc = info.description.to_lowercase();
     let domain = info.domain.to_lowercase();
-    words.iter().any(|w| {
+
+    let mut total = 0u32;
+    for w in words {
         let w = w.to_lowercase();
-        name.contains(&w) || desc.contains(&w) || domain.contains(&w)
-    })
+        let hit = if name == w {
+            0
+        } else if name.contains(&w) {
+            1
+        } else if desc.contains(&w) {
+            2
+        } else if domain.contains(&w) {
+            3
+        } else {
+            return None; // a word matched nowhere -> the site is not a full match
+        };
+        total += hit;
+    }
+    Some(total)
 }
 
 fn now_unix() -> i64 {
@@ -189,6 +208,7 @@ impl Store {
                     created_at: now_unix(),
                     name: clean_meta(name, &sub),
                     description: clean_meta(description, ""),
+                    visits: 0,
                 },
             );
         }
@@ -246,6 +266,23 @@ impl Store {
             .unwrap_or_default()
     }
 
+    /// Visit count for a subdomain.
+    pub fn get_visits(&self, sub: &str) -> u64 {
+        let sites = self.sites.lock().unwrap();
+        sites.get(sub).map(|r| r.visits).unwrap_or_default()
+    }
+
+    /// Count one served request, then persist.
+    pub fn record_traffic(&self, sub: &str) {
+        {
+            let mut sites = self.sites.lock().unwrap();
+            if let Some(r) = sites.get_mut(sub) {
+                r.visits += 1;
+            }
+        }
+        let _ = self.persist();
+    }
+
     pub fn exists(&self, sub: &str) -> bool {
         self.sites.lock().unwrap().contains_key(sub)
     }
@@ -264,12 +301,22 @@ impl Store {
     pub fn search(&self, query: &str) -> Vec<SiteInfo> {
         let words: Vec<String> = query.split_whitespace().map(str::to_string).collect();
         let sites = self.sites.lock().unwrap();
-        let hits: Vec<SiteInfo> = Self::all_infos(&sites, &self.base_domain)
-            .into_iter()
-            .filter(|i| matches_query(i, &words))
-            .take(50)
+        let infos = Self::all_infos(&sites, &self.base_domain);
+        let mut hits: Vec<(u32, usize)> = infos
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, i)| score_doc(i, &words).map(|s| (s, idx)))
             .collect();
-        hits
+        // rank by score (tie-break: newest first)
+        hits.sort_by(|a, b| {
+            (a.0.cmp(&b.0)).then_with(|| {
+                infos[b.1].created_at.cmp(&infos[a.1].created_at)
+            })
+        });
+        hits.into_iter()
+            .take(50)
+            .map(|(_, idx)| infos[idx].clone())
+            .collect()
     }
 
     pub fn recent_sites(&self, n: usize) -> Vec<SiteInfo> {
@@ -356,11 +403,59 @@ mod tests {
             description: "Un sito sui gatti e sulla pizza".into(),
             created_at: 0,
         };
-        assert!(matches_query(&e, &["gatto".into()]));
-        assert!(matches_query(&e, &["PIZZA".into()]));
-        assert!(matches_query(&e, &["nero".into(), "cane".into()]));
-        assert!(!matches_query(&e, &["cane".into()]));
-        assert!(matches_query(&e, &[])); // empty query matches everything
+        // AND matching: every word must appear somewhere
+        assert!(score_doc(&e, &["gatto".into()]).is_some());
+        assert!(score_doc(&e, &["PIZZA".into()]).is_some());
+        assert!(score_doc(&e, &["nero".into(), "pizza".into()]).is_some());
+        // a word that matches nowhere -> not a full match
+        assert_eq!(score_doc(&e, &["cane".into()]), None);
+        assert_eq!(score_doc(&e, &["gatto".into(), "cane".into()]), None);
+        // empty query matches everything
+        assert_eq!(score_doc(&e, &[]), Some(0));
+    }
+
+    #[test]
+    fn search_ranking() {
+        let dir = std::env::temp_dir().join(format!("hcity-rank-{}", Uuid::new_v4()));
+        let store = Store::load(dir.clone(), "pages.hirpus".into(), 1024).unwrap();
+        store.signup("pizza", "Pizza Romana", "cucina tradizionale").unwrap();
+        store.signup("mario", "Mario", "il sito di mario sulla pizza").unwrap();
+        store.signup("gatto", "Gatto", "animali").unwrap();
+
+        // "pizza" matches the pizza and mario sites; exact-name match ranks first
+        let r: Vec<String> = store
+            .search("pizza")
+            .into_iter()
+            .map(|i| i.domain.split('.').next().unwrap().to_string())
+            .collect();
+        assert_eq!(r[0], "pizza");
+        assert!(r.contains(&"mario".to_string()));
+        // the gatto site has no "pizza", so it is excluded (AND semantics)
+        assert!(!r.contains(&"gatto".to_string()));
+
+        // AND: "mario pizza" must exclude the gatto site
+        let and: Vec<String> = store
+            .search("mario pizza")
+            .into_iter()
+            .map(|i| i.domain.split('.').next().unwrap().to_string())
+            .collect();
+        assert_eq!(and, vec!["mario".to_string()]);
+
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn traffic_tracking() {
+        let dir = std::env::temp_dir().join(format!("hcity-traffic-{}", Uuid::new_v4()));
+        let store = Store::load(dir.clone(), "pages.hirpus".into(), 1024).unwrap();
+        store.signup("uno", "", "").unwrap();
+        store.record_traffic("uno");
+        store.record_traffic("uno");
+        assert_eq!(store.get_visits("uno"), 2);
+        // survives a reload (persisted)
+        let reloaded = Store::load(dir.clone(), "pages.hirpus".into(), 1024).unwrap();
+        assert_eq!(reloaded.get_visits("uno"), 2);
+        std::fs::remove_dir_all(dir).ok();
     }
 
     #[test]
