@@ -1,25 +1,15 @@
 function highlightQuery(text, q) {
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return [document.createTextNode(text)];
-  const lower = text.toLowerCase();
-  const nodes = [];
-  let pos = 0;
-  while (pos < text.length) {
-    let hit = -1;
-    for (const w of words) {
-      const i = lower.indexOf(w, pos);
-      if (i >= 0 && (hit === -1 || i < hit)) hit = i;
-    }
-    if (hit === -1) {
-      nodes.push(document.createTextNode(text.slice(pos)));
-      break;
-    }
-    if (hit > pos) nodes.push(document.createTextNode(text.slice(pos, hit)));
-    const word = words.find((w) => lower.indexOf(w, hit) === hit);
-    nodes.push(el("b", "", text.slice(hit, hit + word.length)));
-    pos = hit + word.length;
-  }
-  return nodes;
+  const esc = words.map((w) =>
+    w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+  );
+  const re = new RegExp("(" + esc.join("|") + ")", "ig");
+  return text
+    .split(re)
+    .map((part, i) =>
+      i % 2 ? el("b", "", part) : document.createTextNode(part),
+    );
 }
 
 function resultNode(s, q) {

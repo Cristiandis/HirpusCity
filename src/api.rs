@@ -11,8 +11,6 @@ use serde_json::json;
 
 use crate::{App, auth, sanitize};
 
-pub(crate) const ADMIN_COOKIE: &str = "hcity_admin";
-
 fn err(status: StatusCode, msg: &str) -> Response {
     (status, Json(json!({ "error": msg }))).into_response()
 }
@@ -46,7 +44,7 @@ impl FromRequestParts<Arc<App>> for Admin {
         app: &Arc<App>,
     ) -> Result<Self, Self::Rejection> {
         let ok = app.admin_key.as_deref().is_some_and(|expected| {
-            auth::cookie_value(&parts.headers, ADMIN_COOKIE).is_some_and(|v| v == expected)
+            auth::cookie_value(&parts.headers, auth::ADMIN_COOKIE).is_some_and(|v| v == expected)
         });
         if ok {
             Ok(Self)
@@ -177,7 +175,6 @@ pub async fn update_meta(
     }
 }
 
-/// Self-service account deletion.
 pub async fn delete_me(State(app): State<Arc<App>>, User(sub): User) -> Response {
     match app.store.delete_site(&sub) {
         Ok(_) => auth::set_cookie_response(
@@ -194,6 +191,7 @@ pub async fn upload(
     mut multipart: Multipart,
 ) -> Response {
     let site_root = app.store.site_dir(&sub);
+    let mut used = app.store.dir_size(&sub);
     let mut saved: usize = 0;
     let mut errors: Vec<String> = Vec::new();
 
@@ -220,7 +218,6 @@ pub async fn upload(
             errors.push(format!("{clean}: file vuoto"));
             continue;
         }
-        let used = app.store.dir_size(&sub);
         if used + data.len() as u64 > app.store.quota_bytes {
             errors.push(format!(
                 "{clean}: quota superata (limite {} byte)",
@@ -229,7 +226,10 @@ pub async fn upload(
             continue;
         }
         match std::fs::write(site_root.join(&clean), &data[..]) {
-            Ok(_) => saved += 1,
+            Ok(_) => {
+                saved += 1;
+                used += data.len() as u64;
+            }
             Err(e) => errors.push(format!("{clean}: scrittura fallita ({e})")),
         }
     }
@@ -269,7 +269,7 @@ pub async fn admin_login(State(app): State<Arc<App>>, Json(body): Json<LoginBody
     match &app.admin_key {
         Some(expected) if body.token == *expected => auth::set_cookie_response(
             ok_json(json!({ "ok": true })),
-            &format!("{ADMIN_COOKIE}={expected}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"),
+            &auth::make_admin_cookie(expected),
         ),
         _ => err(StatusCode::UNAUTHORIZED, "chiave sbagliata"),
     }
@@ -278,25 +278,22 @@ pub async fn admin_login(State(app): State<Arc<App>>, Json(body): Json<LoginBody
 pub async fn admin_logout() -> Response {
     auth::set_cookie_response(
         ok_json(json!({ "ok": true })),
-        &auth::expired_cookie(ADMIN_COOKIE),
+        &auth::expired_cookie(auth::ADMIN_COOKIE),
     )
 }
 
 pub async fn admin_sites(State(app): State<Arc<App>>, _: Admin) -> Response {
-    let base_suffix = format!(".{}", app.store.base_domain);
     let mut rows: Vec<serde_json::Value> = Vec::new();
     for info in app.store.recent_sites(usize::MAX) {
-        if let Some(sub) = info.domain.strip_suffix(&base_suffix) {
-            let visits = app.store.get_visits(sub);
-            rows.push(json!({
-                "sub": sub,
-                "domain": info.domain,
-                "name": info.name,
-                "description": info.description,
-                "size_bytes": app.store.dir_size(sub),
-                "visits": visits,
-            }));
-        }
+        let visits = app.store.get_visits(&info.sub);
+        rows.push(json!({
+            "sub": info.sub,
+            "domain": info.domain,
+            "name": info.name,
+            "description": info.description,
+            "size_bytes": app.store.dir_size(&info.sub),
+            "visits": visits,
+        }));
     }
     rows.sort_by(|a, b| a["sub"].as_str().cmp(&b["sub"].as_str()));
     ok_json(json!({ "sites": rows }))
@@ -312,11 +309,10 @@ pub struct AdminSubBody {
     pub description: String,
 }
 
-/// Trim and validate the subdomain from an admin request body.
-fn admin_sub(body: &AdminSubBody) -> Result<&str, Response> {
+fn admin_sub(body: &AdminSubBody) -> Result<&str, &'static str> {
     let sub = body.sub.trim();
     if sub.is_empty() {
-        return Err(err(StatusCode::BAD_REQUEST, "sottodominio mancante"));
+        return Err("sottodominio mancante");
     }
     Ok(sub)
 }
@@ -326,9 +322,8 @@ pub async fn admin_meta(
     _: Admin,
     Json(body): Json<AdminSubBody>,
 ) -> Response {
-    let sub = match admin_sub(&body) {
-        Ok(s) => s,
-        Err(e) => return e,
+    let Ok(sub) = admin_sub(&body) else {
+        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
     };
     match app.store.update_meta(sub, &body.name, &body.description) {
         Ok(_) => ok_json(json!({ "ok": true })),
@@ -341,9 +336,8 @@ pub async fn admin_reset_key(
     _: Admin,
     Json(body): Json<AdminSubBody>,
 ) -> Response {
-    let sub = match admin_sub(&body) {
-        Ok(s) => s,
-        Err(e) => return e,
+    let Ok(sub) = admin_sub(&body) else {
+        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
     };
     match app.store.reset_token(sub) {
         Ok(token) => ok_json(json!({ "sub": sub, "token": token })),
@@ -356,9 +350,8 @@ pub async fn admin_delete(
     _: Admin,
     Json(body): Json<AdminSubBody>,
 ) -> Response {
-    let sub = match admin_sub(&body) {
-        Ok(s) => s,
-        Err(e) => return e,
+    let Ok(sub) = admin_sub(&body) else {
+        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
     };
     match app.store.delete_site(sub) {
         Ok(_) => ok_json(json!({ "ok": true })),

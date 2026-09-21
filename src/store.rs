@@ -40,6 +40,7 @@ pub struct SiteRecord {
 /// Derived view of a site used by search / listings.
 #[derive(Serialize, Clone)]
 pub struct SiteInfo {
+    pub sub: String,
     pub domain: String,
     pub name: String,
     pub description: String,
@@ -77,10 +78,8 @@ fn validate_subdomain(sub: &str) -> Result<(), &'static str> {
     Ok(())
 }
 
-/// Score a site against a query: None if it does not match ALL words.
-///
-/// Lower is better; rank order: exact name > name substring > description >
-/// domain. Partial matches (a word found) count less than full matches.
+/// Score a site against a query: None if any word matches nowhere.
+/// Rank: exact name < name < description < domain.
 fn score_doc(info: &SiteInfo, words: &[String]) -> Option<u32> {
     if words.is_empty() {
         return Some(0);
@@ -101,7 +100,7 @@ fn score_doc(info: &SiteInfo, words: &[String]) -> Option<u32> {
         } else if domain.contains(&w) {
             3
         } else {
-            return None; // a word matched nowhere -> the site is not a full match
+            return None;
         };
         total += hit;
     }
@@ -111,8 +110,8 @@ fn score_doc(info: &SiteInfo, words: &[String]) -> Option<u32> {
 fn now_unix() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
+        .unwrap()
+        .as_secs() as i64
 }
 
 impl Store {
@@ -133,7 +132,6 @@ impl Store {
             quota_bytes,
             sites: Mutex::new(sites),
         };
-        store.persist()?;
         Ok(store)
     }
 
@@ -141,6 +139,7 @@ impl Store {
         let mut infos: Vec<SiteInfo> = sites
             .iter()
             .map(|(sub, r)| SiteInfo {
+                sub: sub.clone(),
                 domain: format!("{sub}.{base_domain}"),
                 name: r.name.clone(),
                 description: r.description.clone(),
@@ -266,7 +265,7 @@ impl Store {
             .unwrap_or_default()
     }
 
-    /// Visit count for a subdomain.
+    /// Persisted visit count for a subdomain.
     pub fn get_visits(&self, sub: &str) -> u64 {
         let sites = self.sites.lock().unwrap();
         sites.get(sub).map(|r| r.visits).unwrap_or_default()
@@ -300,20 +299,18 @@ impl Store {
 
     pub fn search(&self, query: &str, limit: usize) -> Vec<SiteInfo> {
         let words: Vec<String> = query.split_whitespace().map(str::to_string).collect();
+        if words.is_empty() {
+            return self.recent_sites(limit);
+        }
         let sites = self.sites.lock().unwrap();
-        let infos = Self::all_infos(&sites, &self.base_domain);
-        let mut hits: Vec<(u32, usize)> = infos
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, i)| score_doc(i, &words).map(|s| (s, idx)))
+        let mut hits: Vec<(u32, SiteInfo)> = Self::all_infos(&sites, &self.base_domain)
+            .into_iter()
+            .filter_map(|info| score_doc(&info, &words).map(|s| (s, info)))
             .collect();
-        // rank by score (tie-break: newest first)
-        hits.sort_by(|a, b| {
-            (a.0.cmp(&b.0)).then_with(|| infos[b.1].created_at.cmp(&infos[a.1].created_at))
-        });
+        hits.sort_by_key(|h| h.0); // stable: newest first already, ties keep that order
         hits.into_iter()
             .take(limit)
-            .map(|(_, idx)| infos[idx].clone())
+            .map(|(_, info)| info)
             .collect()
     }
 
@@ -327,9 +324,18 @@ impl Store {
 
     /// Total size in bytes of a site's files (sites are flat).
     pub fn dir_size(&self, sub: &str) -> u64 {
-        self.dir_listing(sub).1
+        let mut total = 0u64;
+        if let Ok(rd) = fs::read_dir(self.site_dir(sub)) {
+            for entry in rd.flatten() {
+                if let Ok(md) = entry.metadata() {
+                    total += md.len();
+                }
+            }
+        }
+        total
     }
 
+    /// Sorted file list and total size in bytes, one directory pass.
     pub fn dir_listing(&self, sub: &str) -> (Vec<(String, u64)>, u64) {
         let mut total = 0u64;
         let mut files = Vec::new();
@@ -396,19 +402,17 @@ mod tests {
     #[test]
     fn query_matching() {
         let e = SiteInfo {
+            sub: "gatto".into(),
             domain: "gatto.pages.hirpus".into(),
             name: "Il Gatto Nero".into(),
             description: "Un sito sui gatti e sulla pizza".into(),
             created_at: 0,
         };
-        // AND matching: every word must appear somewhere
         assert!(score_doc(&e, &["gatto".into()]).is_some());
         assert!(score_doc(&e, &["PIZZA".into()]).is_some());
         assert!(score_doc(&e, &["nero".into(), "pizza".into()]).is_some());
-        // a word that matches nowhere -> not a full match
         assert_eq!(score_doc(&e, &["cane".into()]), None);
         assert_eq!(score_doc(&e, &["gatto".into(), "cane".into()]), None);
-        // empty query matches everything
         assert_eq!(score_doc(&e, &[]), Some(0));
     }
 
@@ -432,7 +436,6 @@ mod tests {
             .collect();
         assert_eq!(r[0], "pizza");
         assert!(r.contains(&"mario".to_string()));
-        // the gatto site has no "pizza", so it is excluded (AND semantics)
         assert!(!r.contains(&"gatto".to_string()));
 
         // AND: "mario pizza" must exclude the gatto site

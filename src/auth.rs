@@ -6,9 +6,18 @@ use axum::{
 use crate::store::Store;
 
 const COOKIE_NAME: &str = "hcity";
+pub(crate) const ADMIN_COOKIE: &str = "hcity_admin";
+
+fn cookie_string(name: &str, value: &str) -> String {
+    format!("{name}={value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000")
+}
 
 pub fn make_cookie(sub: &str, token: &str) -> String {
-    format!("{COOKIE_NAME}={sub}:{token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000")
+    cookie_string(COOKIE_NAME, &format!("{sub}:{token}"))
+}
+
+pub fn make_admin_cookie(key: &str) -> String {
+    cookie_string(ADMIN_COOKIE, key)
 }
 
 pub fn cookie_value(headers: &HeaderMap, name: &str) -> Option<String> {

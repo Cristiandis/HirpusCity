@@ -128,7 +128,6 @@ async fn host_dispatch(State(app): State<Arc<App>>, req: Request, next: Next) ->
     next.run(req).await
 }
 
-/// Serve any static file from the assets dir.
 async fn asset(State(app): State<Arc<App>>, uri: Uri) -> Response {
     let name = uri.path().trim_start_matches('/');
     let name = if name.is_empty() { "index.html" } else { name };
