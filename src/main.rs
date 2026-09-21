@@ -56,6 +56,18 @@ async fn main() {
         admin_key,
     });
 
+    {
+        let app = app.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                if let Err(e) = app.store.persist() {
+                    eprintln!("storage error: {e}");
+                }
+            }
+        });
+    }
+
     println!("HIRPUSPAGES in ascolto su http://{listen}");
     println!("  dominio:      {base_domain} + *.{base_domain}");
     println!("  dati:         {}", data_dir.display());
@@ -90,8 +102,7 @@ async fn main() {
             .route("/api/admin/delete", post(api::admin_delete))
     } else {
         base_router
-    }
-    .fallback(main_fallback);
+    };
 
     let app = router
         .layer(middleware::from_fn_with_state(app.clone(), host_dispatch))
@@ -159,10 +170,6 @@ pub(crate) fn not_found_response(app: &App) -> Response {
         bytes,
     )
         .into_response()
-}
-
-async fn main_fallback(State(app): State<Arc<App>>) -> Response {
-    not_found_response(&app)
 }
 
 fn human_bytes(bytes: u64) -> String {

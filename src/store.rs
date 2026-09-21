@@ -150,7 +150,7 @@ impl Store {
         infos
     }
 
-    fn persist(&self) -> io::Result<()> {
+    pub fn persist(&self) -> io::Result<()> {
         let sites = self.sites.lock().unwrap();
         let sites_json = serde_json::to_string_pretty(&*sites).expect("serialize sites.json");
         atomic_write(&self.data_dir.join("sites.json"), sites_json.as_bytes())?;
@@ -271,15 +271,12 @@ impl Store {
         sites.get(sub).map(|r| r.visits).unwrap_or_default()
     }
 
-    /// Count one served request, then persist.
+    /// Count one served request. In memory only; the background task
+    /// persists the registry on a fixed interval.
     pub fn record_traffic(&self, sub: &str) {
-        {
-            let mut sites = self.sites.lock().unwrap();
-            if let Some(r) = sites.get_mut(sub) {
-                r.visits += 1;
-            }
+        if let Some(r) = self.sites.lock().unwrap().get_mut(sub) {
+            r.visits += 1;
         }
-        let _ = self.persist();
     }
 
     pub fn exists(&self, sub: &str) -> bool {
@@ -308,10 +305,7 @@ impl Store {
             .filter_map(|info| score_doc(&info, &words).map(|s| (s, info)))
             .collect();
         hits.sort_by_key(|h| h.0); // stable: newest first already, ties keep that order
-        hits.into_iter()
-            .take(limit)
-            .map(|(_, info)| info)
-            .collect()
+        hits.into_iter().take(limit).map(|(_, info)| info).collect()
     }
 
     pub fn recent_sites(&self, n: usize) -> Vec<SiteInfo> {
@@ -457,6 +451,7 @@ mod tests {
         store.record_traffic("uno");
         store.record_traffic("uno");
         assert_eq!(store.get_visits("uno"), 2);
+        store.persist().unwrap();
         // survives a reload (persisted)
         let reloaded = Store::load(dir.clone(), "pages.hirpus".into(), 1024).unwrap();
         assert_eq!(reloaded.get_visits("uno"), 2);

@@ -31,13 +31,6 @@ pub fn clean_upload_name(raw: &str) -> Option<String> {
     Some(base.to_string())
 }
 
-pub fn safe_file_name(raw: &str) -> Option<String> {
-    if raw.is_empty() || raw.starts_with('.') || !name_ok(raw) {
-        return None;
-    }
-    Some(raw.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,17 +58,17 @@ mod tests {
     }
 
     #[test]
-    fn file_names() {
-        assert_eq!(safe_file_name("index.html").as_deref(), Some("index.html"));
+    fn delete_names() {
         assert_eq!(
-            safe_file_name("a b (1).png").as_deref(),
-            Some("a b (1).png")
+            clean_upload_name("../evil.html").as_deref(),
+            Some("evil.html")
         );
-        assert_eq!(safe_file_name("../secret.txt"), None);
-        assert_eq!(safe_file_name("/abs.html"), None);
-        assert_eq!(safe_file_name(""), None);
-        assert_eq!(safe_file_name("."), None);
-        assert_eq!(safe_file_name(".hidden.html"), None);
-        assert_eq!(safe_file_name("bad\\name.html"), None);
+        assert_eq!(clean_upload_name("/abs.html").as_deref(), Some("abs.html"));
+        assert_eq!(
+            clean_upload_name("bad\\name.html").as_deref(),
+            Some("name.html")
+        );
+        assert_eq!(clean_upload_name("."), None);
+        assert_eq!(clean_upload_name("noext"), None);
     }
 }
