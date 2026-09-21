@@ -133,17 +133,15 @@ pub struct SitesQuery {
 
 pub async fn sites(State(app): State<Arc<App>>, Query(params): Query<SitesQuery>) -> Response {
     let query = params.q.unwrap_or_default();
-    let infos = app.store.search(&query);
     let limit = params.limit.unwrap_or(50).min(500);
-    ok_json(json!(infos.into_iter().take(limit).collect::<Vec<_>>()))
+    ok_json(json!(app.store.search(&query, limit)))
 }
 
 pub async fn me(State(app): State<Arc<App>>, User(sub): User) -> Response {
     let (name, description) = app.store.get_meta(&sub);
     let visits = app.store.get_visits(&sub);
-    let files: Vec<serde_json::Value> = app
-        .store
-        .site_files(&sub)
+    let (files_list, used_bytes) = app.store.dir_listing(&sub);
+    let files: Vec<serde_json::Value> = files_list
         .into_iter()
         .map(|(name, size)| json!({ "name": name, "size_bytes": size }))
         .collect();
@@ -154,7 +152,7 @@ pub async fn me(State(app): State<Arc<App>>, User(sub): User) -> Response {
         "name": name,
         "description": description,
         "quota_bytes": app.store.quota_bytes,
-        "used_bytes": app.store.dir_size(&sub),
+        "used_bytes": used_bytes,
         "visits": visits,
         "files": files,
     }))
@@ -314,15 +312,24 @@ pub struct AdminSubBody {
     pub description: String,
 }
 
+/// Trim and validate the subdomain from an admin request body.
+fn admin_sub(body: &AdminSubBody) -> Result<&str, Response> {
+    let sub = body.sub.trim();
+    if sub.is_empty() {
+        return Err(err(StatusCode::BAD_REQUEST, "sottodominio mancante"));
+    }
+    Ok(sub)
+}
+
 pub async fn admin_meta(
     State(app): State<Arc<App>>,
     _: Admin,
     Json(body): Json<AdminSubBody>,
 ) -> Response {
-    let sub = body.sub.trim();
-    if sub.is_empty() {
-        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
-    }
+    let sub = match admin_sub(&body) {
+        Ok(s) => s,
+        Err(e) => return e,
+    };
     match app.store.update_meta(sub, &body.name, &body.description) {
         Ok(_) => ok_json(json!({ "ok": true })),
         Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, &e.to_string()),
@@ -334,10 +341,10 @@ pub async fn admin_reset_key(
     _: Admin,
     Json(body): Json<AdminSubBody>,
 ) -> Response {
-    let sub = body.sub.trim();
-    if sub.is_empty() {
-        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
-    }
+    let sub = match admin_sub(&body) {
+        Ok(s) => s,
+        Err(e) => return e,
+    };
     match app.store.reset_token(sub) {
         Ok(token) => ok_json(json!({ "sub": sub, "token": token })),
         Err(e) => err(StatusCode::NOT_FOUND, &e),
@@ -349,10 +356,10 @@ pub async fn admin_delete(
     _: Admin,
     Json(body): Json<AdminSubBody>,
 ) -> Response {
-    let sub = body.sub.trim();
-    if sub.is_empty() {
-        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
-    }
+    let sub = match admin_sub(&body) {
+        Ok(s) => s,
+        Err(e) => return e,
+    };
     match app.store.delete_site(sub) {
         Ok(_) => ok_json(json!({ "ok": true })),
         Err(e) => err(StatusCode::NOT_FOUND, &e),

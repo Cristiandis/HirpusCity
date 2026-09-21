@@ -14,13 +14,8 @@ function fileCells(f) {
   nameTd.appendChild(a);
 
   const btnTd = el("td", "auto-style10");
-  const form = el("form");
-  form.style.margin = "0";
-  const btn = el("input");
-  btn.type = "submit";
-  btn.value = "CANCELLA";
-  btn.addEventListener("click", async (ev) => {
-    ev.preventDefault();
+  const btn = el("button", "danger", "CANCELLA");
+  btn.addEventListener("click", async () => {
     try {
       await api("/api/files/delete", { json: { name: f.name } });
       await refresh();
@@ -28,8 +23,7 @@ function fileCells(f) {
       showMsg("dash-err", e.message);
     }
   });
-  form.appendChild(btn);
-  btnTd.appendChild(form);
+  btnTd.appendChild(btn);
 
   return [nameTd, el("td", "auto-style10 small", fmtSize(f.size_bytes)), btnTd];
 }

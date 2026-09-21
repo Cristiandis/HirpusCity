@@ -298,7 +298,7 @@ impl Store {
         self.persist()
     }
 
-    pub fn search(&self, query: &str) -> Vec<SiteInfo> {
+    pub fn search(&self, query: &str, limit: usize) -> Vec<SiteInfo> {
         let words: Vec<String> = query.split_whitespace().map(str::to_string).collect();
         let sites = self.sites.lock().unwrap();
         let infos = Self::all_infos(&sites, &self.base_domain);
@@ -309,12 +309,10 @@ impl Store {
             .collect();
         // rank by score (tie-break: newest first)
         hits.sort_by(|a, b| {
-            (a.0.cmp(&b.0)).then_with(|| {
-                infos[b.1].created_at.cmp(&infos[a.1].created_at)
-            })
+            (a.0.cmp(&b.0)).then_with(|| infos[b.1].created_at.cmp(&infos[a.1].created_at))
         });
         hits.into_iter()
-            .take(50)
+            .take(limit)
             .map(|(_, idx)| infos[idx].clone())
             .collect()
     }
@@ -329,41 +327,41 @@ impl Store {
 
     /// Total size in bytes of a site's files (sites are flat).
     pub fn dir_size(&self, sub: &str) -> u64 {
-        let mut total = 0;
+        self.dir_listing(sub).1
+    }
+
+    pub fn dir_listing(&self, sub: &str) -> (Vec<(String, u64)>, u64) {
+        let mut total = 0u64;
+        let mut files = Vec::new();
         if let Ok(rd) = fs::read_dir(self.site_dir(sub)) {
             for entry in rd.flatten() {
                 if let Ok(md) = entry.metadata() {
                     total += md.len();
-                }
-            }
-        }
-        total
-    }
-
-    pub fn site_files(&self, sub: &str) -> Vec<(String, u64)> {
-        let mut files = Vec::new();
-        if let Ok(rd) = fs::read_dir(self.site_dir(sub)) {
-            for entry in rd.flatten() {
-                if let Ok(md) = entry.metadata()
-                    && md.is_file()
-                {
-                    files.push((entry.file_name().to_string_lossy().to_string(), md.len()));
+                    if md.is_file() {
+                        files.push((entry.file_name().to_string_lossy().to_string(), md.len()));
+                    }
                 }
             }
         }
         files.sort();
-        files
+        (files, total)
     }
 }
 
 fn clean_meta(input: &str, fallback: &str) -> String {
-    let trimmed = input.split_whitespace().collect::<Vec<_>>().join(" ");
-    let cleaned: String = trimmed.chars().filter(|c| !c.is_control()).collect();
-    let s: String = cleaned.chars().take(120).collect();
-    if s.trim().is_empty() {
+    let s: String = input
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(120)
+        .collect();
+    let s = s.trim();
+    if s.is_empty() {
         fallback.to_string()
     } else {
-        s.trim().to_string()
+        s.to_string()
     }
 }
 
@@ -418,13 +416,17 @@ mod tests {
     fn search_ranking() {
         let dir = std::env::temp_dir().join(format!("hcity-rank-{}", Uuid::new_v4()));
         let store = Store::load(dir.clone(), "pages.hirpus".into(), 1024).unwrap();
-        store.signup("pizza", "Pizza Romana", "cucina tradizionale").unwrap();
-        store.signup("mario", "Mario", "il sito di mario sulla pizza").unwrap();
+        store
+            .signup("pizza", "Pizza Romana", "cucina tradizionale")
+            .unwrap();
+        store
+            .signup("mario", "Mario", "il sito di mario sulla pizza")
+            .unwrap();
         store.signup("gatto", "Gatto", "animali").unwrap();
 
         // "pizza" matches the pizza and mario sites; exact-name match ranks first
         let r: Vec<String> = store
-            .search("pizza")
+            .search("pizza", 50)
             .into_iter()
             .map(|i| i.domain.split('.').next().unwrap().to_string())
             .collect();
@@ -435,7 +437,7 @@ mod tests {
 
         // AND: "mario pizza" must exclude the gatto site
         let and: Vec<String> = store
-            .search("mario pizza")
+            .search("mario pizza", 50)
             .into_iter()
             .map(|i| i.domain.split('.').next().unwrap().to_string())
             .collect();

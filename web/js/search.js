@@ -32,10 +32,7 @@ function resultNode(s, q) {
   h.append(link);
   r.append(h);
 
-  const url = el("div", "g-u", s.domain + " - ");
-  const cached = el("a", "", "Nella cache");
-  const similar = el("a", "", "Simili");
-  url.append(cached, " - ", similar);
+  const url = el("div", "g-u", s.domain);
   r.append(url);
 
   if (s.description) {

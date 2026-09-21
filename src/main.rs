@@ -39,19 +39,14 @@ async fn main() {
         * 1024;
 
     // Admin panel: enabled only by a well-formed UUID in the environment.
-    let admin_key = std::env::var("HIRPUS_ADMIN_UUID")
-        .ok()
-        .map(|v| v.trim().to_string())
-        .filter(|v| {
-            !v.is_empty() && {
-                if uuid::Uuid::parse_str(v).is_ok() {
-                    true
-                } else {
-                    eprintln!("HIRPUS_ADMIN_UUID non valido: pannello admin disattivato");
-                    false
-                }
-            }
-        });
+    let admin_key = match std::env::var("HIRPUS_ADMIN_UUID").ok() {
+        Some(v) if !v.trim().is_empty() && uuid::Uuid::parse_str(v.trim()).is_ok() => Some(v),
+        Some(v) if !v.trim().is_empty() => {
+            eprintln!("HIRPUS_ADMIN_UUID non valido: pannello admin disattivato");
+            None
+        }
+        _ => None,
+    };
 
     let store = Store::load(data_dir.clone(), base_domain.clone(), quota_bytes)
         .expect("impossibile inizializzare lo storage");
@@ -87,7 +82,6 @@ async fn main() {
 
     let router = if app.admin_key.is_some() {
         base_router
-            .route("/admin.html", get(asset))
             .route("/api/admin/login", post(api::admin_login))
             .route("/api/admin/logout", post(api::admin_logout))
             .route("/api/admin/sites", get(api::admin_sites))
@@ -139,6 +133,9 @@ async fn asset(State(app): State<Arc<App>>, uri: Uri) -> Response {
     let name = uri.path().trim_start_matches('/');
     let name = if name.is_empty() { "index.html" } else { name };
     if name.split('/').any(|s| s.is_empty() || s.starts_with('.')) {
+        return not_found_response(&app);
+    }
+    if name == "admin.html" && app.admin_key.is_none() {
         return not_found_response(&app);
     }
     match std::fs::read(app.assets_dir.join(name)) {

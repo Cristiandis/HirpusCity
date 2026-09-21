@@ -1,12 +1,7 @@
 function actionButton(label, onClick) {
-  const form = el("form");
-  form.style.margin = "0";
-  form.style.display = "inline";
-  const btn = el("input");
-  btn.type = "submit";
-  btn.value = label;
-  btn.addEventListener("click", async (ev) => {
-    ev.preventDefault();
+  const btn = el("button", "", label);
+  btn.type = "button";
+  btn.addEventListener("click", async () => {
     try {
       await onClick();
     } catch (e) {
@@ -14,8 +9,7 @@ function actionButton(label, onClick) {
       showMsg("admin-err", e.message);
     }
   });
-  form.appendChild(btn);
-  return form;
+  return btn;
 }
 
 function adminHeadCell(s) {
