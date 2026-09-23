@@ -327,12 +327,13 @@ pub async fn admin_meta(
     State(app): State<Arc<App>>,
     _: Admin,
     Json(body): Json<AdminSubBody>,
-) -> Result<Response, Response> {
-    let sub =
-        admin_sub(&body).ok_or_else(|| err(StatusCode::BAD_REQUEST, "sottodominio mancante"))?;
+) -> Response {
+    let Some(sub) = admin_sub(&body) else {
+        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
+    };
     match app.store.update_meta(sub, &body.name, &body.description) {
-        Ok(_) => Ok(ok_json(json!({ "ok": true }))),
-        Err(e) => Err(err(StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())),
+        Ok(_) => ok_json(json!({ "ok": true })),
+        Err(e) => err(StatusCode::INTERNAL_SERVER_ERROR, &e.to_string()),
     }
 }
 
@@ -340,12 +341,13 @@ pub async fn admin_reset_key(
     State(app): State<Arc<App>>,
     _: Admin,
     Json(body): Json<AdminSubBody>,
-) -> Result<Response, Response> {
-    let sub =
-        admin_sub(&body).ok_or_else(|| err(StatusCode::BAD_REQUEST, "sottodominio mancante"))?;
+) -> Response {
+    let Some(sub) = admin_sub(&body) else {
+        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
+    };
     match app.store.reset_token(sub) {
-        Ok(token) => Ok(ok_json(json!({ "sub": sub, "token": token }))),
-        Err(e) => Err(err(StatusCode::NOT_FOUND, &e)),
+        Ok(token) => ok_json(json!({ "sub": sub, "token": token })),
+        Err(e) => err(StatusCode::NOT_FOUND, &e),
     }
 }
 
@@ -353,11 +355,12 @@ pub async fn admin_delete(
     State(app): State<Arc<App>>,
     _: Admin,
     Json(body): Json<AdminSubBody>,
-) -> Result<Response, Response> {
-    let sub =
-        admin_sub(&body).ok_or_else(|| err(StatusCode::BAD_REQUEST, "sottodominio mancante"))?;
+) -> Response {
+    let Some(sub) = admin_sub(&body) else {
+        return err(StatusCode::BAD_REQUEST, "sottodominio mancante");
+    };
     match app.store.delete_site(sub) {
-        Ok(_) => Ok(ok_json(json!({ "ok": true }))),
-        Err(e) => Err(err(StatusCode::NOT_FOUND, &e)),
+        Ok(_) => ok_json(json!({ "ok": true })),
+        Err(e) => err(StatusCode::NOT_FOUND, &e),
     }
 }

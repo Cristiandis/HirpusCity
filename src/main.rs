@@ -55,6 +55,7 @@ async fn main() {
         assets_dir,
         admin_key,
     });
+    let storage = app.clone();
 
     {
         let app = app.clone();
@@ -114,7 +115,35 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&listen)
         .await
         .expect("porta non disponibile");
-    axum::serve(listener, app).await.expect("server error");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .expect("server error");
+    if let Err(e) = storage.store.persist() {
+        eprintln!("storage error: {e}");
+    }
+}
+
+/// Wait for SIGINT (Ctrl-C) or SIGTERM.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("gestione ctrl_c non disponibile");
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("gestione SIGTERM non disponibile")
+            .recv()
+            .await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! {
+        _ = ctrl_c => {}
+        _ = terminate => {}
+    }
 }
 
 /// Route user-subdomain requests straight to static file serving.
