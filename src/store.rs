@@ -121,7 +121,18 @@ impl Store {
         let sites_path = data_dir.join("sites.json");
         let sites: BTreeMap<String, SiteRecord> = if sites_path.exists() {
             let raw = fs::read_to_string(&sites_path)?;
-            serde_json::from_str(&raw).unwrap_or_default()
+            match serde_json::from_str(&raw) {
+                Ok(sites) => sites,
+                Err(_) => {
+                    let backup = sites_path.with_extension("json.bak");
+                    let backup_name = backup.to_string_lossy().to_string();
+                    fs::rename(&sites_path, &backup)?;
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!("sites.json danneggiato, salvato come {backup_name}"),
+                    ));
+                }
+            }
         } else {
             BTreeMap::new()
         };
@@ -295,9 +306,18 @@ impl Store {
     }
 
     pub fn search(&self, query: &str, limit: usize) -> Vec<SiteInfo> {
-        let words: Vec<String> = query.split_whitespace().map(str::to_string).collect();
-        if words.is_empty() {
+        let raw_words: Vec<&str> = query.split_whitespace().collect();
+        if raw_words.is_empty() {
             return self.recent_sites(limit);
+        }
+        let stop: Vec<&str> = self.base_domain.split('.').collect();
+        let words: Vec<String> = raw_words
+            .into_iter()
+            .filter(|w| !stop.iter().any(|c| c.eq_ignore_ascii_case(w)))
+            .map(str::to_string)
+            .collect();
+        if words.is_empty() {
+            return Vec::new();
         }
         let sites = self.sites.lock().unwrap();
         let mut hits: Vec<(u32, SiteInfo)> = Self::all_infos(&sites, &self.base_domain)
@@ -440,6 +460,10 @@ mod tests {
             .collect();
         assert_eq!(and, vec!["mario".to_string()]);
 
+        // base-domain words match every domain, so they must be ignored
+        assert!(store.search("pages", 50).is_empty());
+        assert!(store.search("PAGES hirpus", 50).is_empty());
+
         std::fs::remove_dir_all(dir).ok();
     }
 
@@ -486,6 +510,22 @@ mod tests {
         assert_eq!(store.get_meta("testsite").0, "Nuovo Nome");
 
         assert!(dir.join("sites.json").exists());
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn corrupt_registry_fails_load_and_backs_up() {
+        let dir = std::env::temp_dir().join(format!("hcity-corrupt-{}", Uuid::new_v4()));
+        fs::create_dir_all(dir.join("sites")).unwrap();
+        fs::write(dir.join("sites.json"), "not json {{{").unwrap();
+
+        assert!(Store::load(dir.clone(), "pages.hirpus".into(), 1024).is_err());
+        assert!(!dir.join("sites.json").exists());
+        assert!(dir.join("sites.json.bak").exists());
+
+        // a fixed file loads normally
+        fs::write(dir.join("sites.json"), "{}").unwrap();
+        assert!(Store::load(dir.clone(), "pages.hirpus".into(), 1024).is_ok());
         std::fs::remove_dir_all(dir).ok();
     }
 

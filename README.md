@@ -21,7 +21,7 @@ docker compose up -d
 
 Pulls the published image from `ghcr.io/cristiandis/hirpuscity:latest`
 (multi-arch: amd64 + arm64). The image is rebuilt automatically by the
-GitHub Actions workflow in `.github/workflows/` on every push to `main`.
+GitHub Actions workflow in `.github/workflows/` on every push to `master`.
 To build locally instead, uncomment `build: .` in docker-compose.yml and
 run `docker compose up -d --build`.
 

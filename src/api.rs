@@ -218,17 +218,26 @@ pub async fn upload(
             errors.push(format!("{clean}: file vuoto"));
             continue;
         }
-        if used + data.len() as u64 > app.store.quota_bytes {
+        let target = site_root.join(&clean);
+        let existing = std::fs::metadata(&target).map(|m| m.len()).unwrap_or(0);
+        let size = data.len() as u64;
+        if used.saturating_sub(existing) + size > app.store.quota_bytes {
             errors.push(format!(
                 "{clean}: quota superata (limite {} byte)",
                 app.store.quota_bytes
             ));
             continue;
         }
-        match std::fs::write(site_root.join(&clean), &data[..]) {
+        match std::fs::write(&target, &data[..]) {
             Ok(_) => {
+                let after = app.store.dir_size(&sub);
+                if after > app.store.quota_bytes {
+                    let _ = std::fs::remove_file(&target);
+                    errors.push(format!("{clean}: quota superata"));
+                    continue;
+                }
                 saved += 1;
-                used += data.len() as u64;
+                used = after;
             }
             Err(e) => errors.push(format!("{clean}: scrittura fallita ({e})")),
         }

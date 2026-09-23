@@ -12,6 +12,7 @@ pub async fn serve(app: &App, sub: &str, path: &str) -> Response {
     if !app.store.exists(sub) || !site_root.is_dir() {
         return crate::not_found_response(app);
     }
+    app.store.record_traffic(sub);
 
     let decoded = percent_decode_str(path).decode_utf8_lossy();
     let name = match flat_target(&decoded) {
@@ -26,7 +27,6 @@ pub async fn serve(app: &App, sub: &str, path: &str) -> Response {
         if custom.is_file()
             && let Ok(bytes) = std::fs::read(&custom)
         {
-            app.store.record_traffic(sub);
             return (
                 StatusCode::NOT_FOUND,
                 [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
@@ -39,7 +39,6 @@ pub async fn serve(app: &App, sub: &str, path: &str) -> Response {
 
     match std::fs::read(&full) {
         Ok(bytes) => {
-            app.store.record_traffic(sub);
             let mime = mime_guess::from_path(&full)
                 .first_raw()
                 .unwrap_or("application/octet-stream")
@@ -66,6 +65,8 @@ fn flat_target(path: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::store::Store;
+    use uuid::Uuid;
 
     #[test]
     fn flat_target_rules() {
@@ -76,5 +77,30 @@ mod tests {
         assert_eq!(flat_target("/../etc/passwd"), None);
         assert_eq!(flat_target("/a/b.html"), None);
         assert_eq!(flat_target("/ok/../nope"), None);
+    }
+
+    #[tokio::test]
+    async fn traffic_counts_all_site_responses() {
+        let dir = std::env::temp_dir().join(format!("hcity-serve-{}", Uuid::new_v4()));
+        let app = crate::App {
+            store: Store::load(dir.clone(), "pages.hirpus".into(), 1024).unwrap(),
+            assets_dir: std::path::PathBuf::from("/nonexistent"),
+            admin_key: None,
+        };
+        app.store.signup("uno", "", "").unwrap();
+        let site = app.store.site_dir("uno");
+        std::fs::write(site.join("index.html"), "<h1>ciao</h1>").unwrap();
+        std::fs::write(site.join("404.html"), "<h1>manca</h1>").unwrap();
+
+        serve(&app, "uno", "/index.html").await;
+        serve(&app, "uno", "/manca.html").await;
+        serve(&app, "uno", "/altro.html").await;
+        assert_eq!(app.store.get_visits("uno"), 3);
+
+        // a nonexistent site is not a visit
+        serve(&app, "ghost", "/index.html").await;
+        assert_eq!(app.store.get_visits("ghost"), 0);
+
+        std::fs::remove_dir_all(dir).ok();
     }
 }
